@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert' as convert;
 
 void main(List<String> args) {
   runApp(const BookApp());
@@ -9,8 +11,14 @@ class BookApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: HomePage(),
+    return MaterialApp(
+      theme: ThemeData(
+          colorScheme: ColorScheme.fromSwatch(
+            primarySwatch: Colors.amber,
+            backgroundColor: Colors.white,
+          ),
+          inputDecorationTheme: const InputDecorationTheme()),
+      home: const HomePage(),
     );
   }
 }
@@ -23,6 +31,27 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final _controller = TextEditingController();
+  int itemCount = 0;
+  String title = "X";
+
+  void _buscarLivros() async {
+    title = _controller.text;
+    final url = Uri.https(
+      'www.googleapis.com',
+      '/books/v1/volumes',
+      {'q': title},
+    );
+
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final jsonResponse = convert.jsonDecode(response.body);
+      itemCount = jsonResponse['totalItems'];
+      setState(() {});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -30,15 +59,19 @@ class _HomePageState extends State<HomePage> {
         padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
-            const TextField(),
+            TextField(
+              controller: _controller,
+            ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () {
+                  _buscarLivros();
+                },
                 icon: const Icon(Icons.search),
                 label: const Text("Pesquisar")),
             const SizedBox(height: 16),
             Text(
-              "Foram encontrados X livros sobre X:",
+              "Foram encontrados $itemCount livros sobre $title:",
               style: Theme.of(context).textTheme.headlineMedium,
             ),
           ],
